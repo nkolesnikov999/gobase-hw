@@ -35,7 +35,7 @@ func main() {
 		},
 	}
 	num, origCur, targetCur := inputCur()
-	calculation(exchangeRates, num, origCur, targetCur)
+	calculation(&exchangeRates, num, origCur, targetCur)
 }
 
 func inputCur() (float64, string, string) {
@@ -177,9 +177,9 @@ func inputTargetCurrency(sourceCurrency string) string {
 	}
 }
 
-func calculation(exchangeRates exchangeMap, num float64, origCur string, targetCur string) {
+func calculation(exchangeRates *exchangeMap, num float64, origCur string, targetCur string) {
 	// Получаем курс обмена из map
-	rate, exists := exchangeRates[origCur][targetCur]
+	rate, exists := (*exchangeRates)[origCur][targetCur]
 	if !exists {
 		fmt.Printf("Ошибка: неподдерживаемое направление конвертации %s -> %s\n", origCur, targetCur)
 		return
