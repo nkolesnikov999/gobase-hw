@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+type exchangeMap = map[string]map[string]float64
+
 // Константы для валют
 const (
 	USD = "USD"
@@ -15,25 +17,25 @@ const (
 	RUB = "RUB"
 )
 
-// Курсы валют в виде map с двумя ключами
-var exchangeRates = map[string]map[string]float64{
-	USD: {
-		EUR: 0.85,
-		RUB: 80.10,
-	},
-	EUR: {
-		USD: 1.18,
-		RUB: 94.24,
-	},
-	RUB: {
-		USD: 0.0125,
-		EUR: 0.0106,
-	},
-}
-
 func main() {
+
+	// Курсы валют в виде map с двумя ключами
+	var exchangeRates = exchangeMap{
+		USD: {
+			EUR: 0.85,
+			RUB: 80.10,
+		},
+		EUR: {
+			USD: 1.18,
+			RUB: 94.24,
+		},
+		RUB: {
+			USD: 0.0125,
+			EUR: 0.0106,
+		},
+	}
 	num, origCur, targetCur := inputCur()
-	calculation(num, origCur, targetCur)
+	calculation(exchangeRates, num, origCur, targetCur)
 }
 
 func inputCur() (float64, string, string) {
@@ -175,7 +177,7 @@ func inputTargetCurrency(sourceCurrency string) string {
 	}
 }
 
-func calculation(num float64, origCur string, targetCur string) {
+func calculation(exchangeRates exchangeMap, num float64, origCur string, targetCur string) {
 	// Получаем курс обмена из map
 	rate, exists := exchangeRates[origCur][targetCur]
 	if !exists {
