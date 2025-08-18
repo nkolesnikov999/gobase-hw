@@ -15,12 +15,21 @@ const (
 	RUB = "RUB"
 )
 
-// Курсы валют
-const (
-	USD_EUR = 0.85
-	USD_RUB = 80.10
-	EUR_RUB = USD_RUB / USD_EUR
-)
+// Курсы валют в виде map с двумя ключами
+var exchangeRates = map[string]map[string]float64{
+	USD: {
+		EUR: 0.85,
+		RUB: 80.10,
+	},
+	EUR: {
+		USD: 1.18,
+		RUB: 94.24,
+	},
+	RUB: {
+		USD: 0.0125,
+		EUR: 0.0106,
+	},
+}
 
 func main() {
 	num, origCur, targetCur := inputCur()
@@ -167,26 +176,15 @@ func inputTargetCurrency(sourceCurrency string) string {
 }
 
 func calculation(num float64, origCur string, targetCur string) {
-	var result float64
-
-	// Выполняем конвертацию в зависимости от направления обмена
-	switch {
-	case origCur == USD && targetCur == EUR:
-		result = num * USD_EUR
-	case origCur == EUR && targetCur == USD:
-		result = num / USD_EUR
-	case origCur == USD && targetCur == RUB:
-		result = num * USD_RUB
-	case origCur == RUB && targetCur == USD:
-		result = num / USD_RUB
-	case origCur == EUR && targetCur == RUB:
-		result = num * EUR_RUB
-	case origCur == RUB && targetCur == EUR:
-		result = num / EUR_RUB
-	default:
+	// Получаем курс обмена из map
+	rate, exists := exchangeRates[origCur][targetCur]
+	if !exists {
 		fmt.Printf("Ошибка: неподдерживаемое направление конвертации %s -> %s\n", origCur, targetCur)
 		return
 	}
+
+	// Выполняем конвертацию
+	result := num * rate
 
 	// Выводим результат с точностью до 2 знаков после запятой
 	fmt.Printf("Результат конвертации: %.0f %s = %.2f %s\n", num, origCur, result, targetCur)
