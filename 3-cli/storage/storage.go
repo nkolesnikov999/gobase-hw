@@ -7,8 +7,16 @@ import (
 	"os"
 )
 
-// SaveBinListToFile сохраняет список bin в JSON файл
-func SaveBinListToFile(binList bins.BinList, filename string) error {
+// Storage реализует интерфейс bins.Repository для JSON файлового хранилища
+type Storage struct{}
+
+// NewStorage создает новый экземпляр Storage
+func NewStorage() *Storage {
+	return &Storage{}
+}
+
+// Save сохраняет список bin в JSON файл (реализация интерфейса bins.Repository)
+func (s *Storage) Save(binList bins.BinList, filename string) error {
 	// Сериализуем BinList в JSON
 	jsonData, err := json.MarshalIndent(binList, "", "  ")
 	if err != nil {
@@ -24,8 +32,8 @@ func SaveBinListToFile(binList bins.BinList, filename string) error {
 	return nil
 }
 
-// LoadBinListFromFile загружает список bin из JSON файла
-func LoadBinListFromFile(filename string) (bins.BinList, error) {
+// Load загружает список bin из JSON файла (реализация интерфейса bins.Repository)
+func (s *Storage) Load(filename string) (bins.BinList, error) {
 	var binList bins.BinList
 
 	// Читаем файл
