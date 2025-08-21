@@ -1,7 +1,9 @@
 package main
 
 import (
+	"cli/api"
 	"cli/bins"
+	"cli/config"
 	"cli/file"
 	"cli/storage"
 	"fmt"
@@ -9,6 +11,26 @@ import (
 )
 
 func main() {
+	// Демонстрация работы с конфигурацией
+	fmt.Println("=== Демонстрация Config и API ===")
+	cfg := config.LoadFromEnvFile(".env")
+
+	fmt.Println("Загруженная конфигурация:")
+	fmt.Printf("KEY: %s\n", cfg.GetByKey("KEY"))
+
+	// Создаем API сервис с конфигурацией
+	apiService := api.NewAPIService(cfg)
+
+	// Запускаем API сервис
+	if err := apiService.Start(); err != nil {
+		log.Fatalf("Ошибка запуска API: %v", err)
+	}
+
+	// Демонстрация использования API
+	response := apiService.HandleRequest()
+	fmt.Printf("API Response: %s\n", response)
+
+	fmt.Println("\n=== Демонстрация работы с Bins ===")
 	// Создаем пример данных
 	bin1 := bins.NewBin("bin-001", "My First Bin", false)
 	bin2 := bins.NewBin("bin-002", "My Second Bin", true)
