@@ -74,16 +74,20 @@ func calculateMedian(numbers []float64) float64 {
 
 // performCalculation выполняет вычисление в зависимости от операции
 func performCalculation(operation string, numbers []float64) (float64, error) {
-	switch strings.ToUpper(operation) {
-	case "SUM":
-		return calculateSum(numbers), nil
-	case "AVG":
-		return calculateAverage(numbers), nil
-	case "MED":
-		return calculateMedian(numbers), nil
-	default:
+	// Map операций с соответствующими функциями
+	operations := map[string]func([]float64) float64{
+		"SUM": calculateSum,
+		"AVG": calculateAverage,
+		"MED": calculateMedian,
+	}
+
+	// Ищем функцию в map
+	calcFunc, exists := operations[strings.ToUpper(operation)]
+	if !exists {
 		return 0, fmt.Errorf("неизвестная операция: %s. Доступные операции: SUM, AVG, MED", operation)
 	}
+
+	return calcFunc(numbers), nil
 }
 
 func main() {
