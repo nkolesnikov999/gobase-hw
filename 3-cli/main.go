@@ -245,6 +245,53 @@ func removeBinFromList(id string) error {
 	return nil
 }
 
+// createBin creates a bin from a JSON file and saves it locally
+func createBin(filename, binName string) {
+	// Load configuration
+	cfg := config.LoadFromEnvFile(".env")
+
+	// Check if API key is configured
+	apiKey := cfg.GetByKey("KEY")
+	if apiKey == "" {
+		log.Fatal("Error: API key not found. Please create .env file with KEY=<your_api_key>")
+	}
+
+	fmt.Printf("Creating bin '%s' from file '%s'...\n", binName, filename)
+
+	// Read file content
+	fileContent, err := file.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("Error reading file: %v", err)
+	}
+
+	// Validate that file contains valid JSON
+	var jsonData interface{}
+	if err := json.Unmarshal([]byte(fileContent), &jsonData); err != nil {
+		log.Fatalf("Error: File does not contain valid JSON: %v", err)
+	}
+
+	// Create API service
+	apiService := api.NewAPIService(cfg)
+
+	// Create bin via JSONBin API
+	response, err := apiService.CreateBin(fileContent)
+	if err != nil {
+		log.Fatalf("Error creating bin: %v", err)
+	}
+
+	fmt.Printf("Bin created successfully!\n")
+	fmt.Printf("ID: %s\n", response.Metadata.ID)
+	fmt.Printf("Created At: %s\n", response.Metadata.CreatedAt)
+	fmt.Printf("Private: %t\n", response.Metadata.Private)
+
+	// Save bin to local storage
+	if err := saveBinToList(response.Metadata.ID, binName); err != nil {
+		log.Fatalf("Error saving bin to local storage: %v", err)
+	}
+
+	fmt.Printf("Bin information saved to bins.json\n")
+}
+
 // listBins displays all created bins
 func listBins() {
 	binsList, err := loadBinsList()
