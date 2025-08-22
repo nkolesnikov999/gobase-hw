@@ -27,6 +27,17 @@ func ReadFile(filename string) (string, error) {
 	return string(data), nil
 }
 
+// WriteFile записывает данные в файл
+func WriteFile(filename string, data string) error {
+	// Записываем данные в файл
+	err := os.WriteFile(filename, []byte(data), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write file %s: %w", filename, err)
+	}
+
+	return nil
+}
+
 // IsJSONFile проверяет, имеет ли файл расширение .json
 func IsJSONFile(filename string) bool {
 	// Получаем расширение файла и приводим к нижнему регистру
