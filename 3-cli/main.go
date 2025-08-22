@@ -28,23 +28,26 @@ func main() {
 		create   = flag.Bool("create", false, "Create a new bin")
 		list     = flag.Bool("list", false, "List all created bins")
 		get      = flag.Bool("get", false, "Get a bin by ID")
+		update   = flag.Bool("update", false, "Update an existing bin")
 		filename = flag.String("file", "", "Path to the JSON file to upload")
 		binName  = flag.String("name", "", "Name for the bin")
-		binID    = flag.String("id", "", "ID of the bin to retrieve")
+		binID    = flag.String("id", "", "ID of the bin to retrieve/update")
 	)
 
 	flag.Parse()
 
 	// Check command flags
-	if !*create && !*list && !*get {
+	if !*create && !*list && !*get && !*update {
 		fmt.Println("Usage:")
 		fmt.Println("  ./cli --create --file=<path> --name=<name>  # Create a new bin")
 		fmt.Println("  ./cli --list                                # List all created bins")
 		fmt.Println("  ./cli --get --id=<bin_id>                   # Get bin data by ID")
+		fmt.Println("  ./cli --update --file=<path> --id=<bin_id>  # Update existing bin")
 		fmt.Println("Examples:")
 		fmt.Println("  ./cli --create --file=bins_data.json --name=my-bin")
 		fmt.Println("  ./cli --list")
 		fmt.Println("  ./cli --get --id=68a83742ae596e708fd0f72c")
+		fmt.Println("  ./cli --update --file=bins_data.json --id=68a83742ae596e708fd0f72c")
 		os.Exit(1)
 	}
 
@@ -60,6 +63,18 @@ func main() {
 			log.Fatal("Error: --id flag is required when using --get")
 		}
 		getBin(*binID)
+		return
+	}
+
+	// Handle update command
+	if *update {
+		if *binID == "" {
+			log.Fatal("Error: --id flag is required when using --update")
+		}
+		if *filename == "" {
+			log.Fatal("Error: --file flag is required when using --update")
+		}
+		updateBin(*binID, *filename)
 		return
 	}
 
@@ -263,4 +278,45 @@ func getBin(binID string) {
 			fmt.Printf("%s\n", responseJSON)
 		}
 	}
+}
+
+// updateBin updates an existing bin with new content
+func updateBin(binID, filename string) {
+	// Load configuration
+	cfg := config.LoadFromEnvFile(".env")
+
+	// Check if API key is configured
+	apiKey := cfg.GetByKey("KEY")
+	if apiKey == "" {
+		log.Fatal("Error: API key not found. Please create .env file with KEY=<your_api_key>")
+	}
+
+	fmt.Printf("Updating bin '%s' with content from file '%s'...\n", binID, filename)
+
+	// Read file content
+	fileContent, err := file.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("Error reading file: %v", err)
+	}
+
+	// Validate that file contains valid JSON
+	var jsonData interface{}
+	if err := json.Unmarshal([]byte(fileContent), &jsonData); err != nil {
+		log.Fatalf("Error: File does not contain valid JSON: %v", err)
+	}
+
+	// Create API service
+	apiService := api.NewAPIService(cfg)
+
+	// Update bin via JSONBin API
+	response, err := apiService.UpdateBin(binID, fileContent)
+	if err != nil {
+		log.Fatalf("Error updating bin: %v", err)
+	}
+
+	fmt.Printf("Bin updated successfully!\n")
+	fmt.Printf("ID: %s\n", response.Metadata.ID)
+	fmt.Printf("Updated At: %s\n", response.Metadata.CreatedAt)
+	fmt.Printf("Private: %t\n", response.Metadata.Private)
+	fmt.Printf("Bin content has been updated with new data from %s\n", filename)
 }
