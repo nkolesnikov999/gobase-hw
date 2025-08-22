@@ -31,6 +31,15 @@ type BinRecord struct {
 	Name string `json:"name"`
 }
 
+// DeleteResponse represents the response from JSONBin API when deleting a bin
+type DeleteResponse struct {
+	Metadata struct {
+		ID              string `json:"id"`
+		VersionsDeleted int    `json:"versionsDeleted"`
+	} `json:"metadata"`
+	Message string `json:"message"`
+}
+
 // NewAPIService creates a new API service with the provided configuration
 func NewAPIService(cfg *config.Config) *APIService {
 	return &APIService{
@@ -216,4 +225,51 @@ func (api *APIService) UpdateBin(binID, fileContent string) (*JSONBinResponse, e
 	}
 
 	return &jsonResponse, nil
+}
+
+// DeleteBin sends a DELETE request to JSONBin API to delete a bin
+func (api *APIService) DeleteBin(binID string) (*DeleteResponse, error) {
+	url := fmt.Sprintf("https://api.jsonbin.io/v3/b/%s", binID)
+
+	// Get API key from config
+	apiKey := api.GetConfigValue("KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key not found in configuration")
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("X-Master-Key", apiKey)
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Check status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	// Parse response
+	var deleteResponse DeleteResponse
+	if err := json.Unmarshal(respBody, &deleteResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &deleteResponse, nil
 }

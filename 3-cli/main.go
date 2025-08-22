@@ -29,25 +29,28 @@ func main() {
 		list     = flag.Bool("list", false, "List all created bins")
 		get      = flag.Bool("get", false, "Get a bin by ID")
 		update   = flag.Bool("update", false, "Update an existing bin")
+		delete   = flag.Bool("delete", false, "Delete an existing bin")
 		filename = flag.String("file", "", "Path to the JSON file to upload")
 		binName  = flag.String("name", "", "Name for the bin")
-		binID    = flag.String("id", "", "ID of the bin to retrieve/update")
+		binID    = flag.String("id", "", "ID of the bin to retrieve/update/delete")
 	)
 
 	flag.Parse()
 
 	// Check command flags
-	if !*create && !*list && !*get && !*update {
+	if !*create && !*list && !*get && !*update && !*delete {
 		fmt.Println("Usage:")
 		fmt.Println("  ./cli --create --file=<path> --name=<name>  # Create a new bin")
 		fmt.Println("  ./cli --list                                # List all created bins")
 		fmt.Println("  ./cli --get --id=<bin_id>                   # Get bin data by ID")
 		fmt.Println("  ./cli --update --file=<path> --id=<bin_id>  # Update existing bin")
+		fmt.Println("  ./cli --delete --id=<bin_id>                # Delete existing bin")
 		fmt.Println("Examples:")
 		fmt.Println("  ./cli --create --file=bins_data.json --name=my-bin")
 		fmt.Println("  ./cli --list")
 		fmt.Println("  ./cli --get --id=68a83742ae596e708fd0f72c")
 		fmt.Println("  ./cli --update --file=bins_data.json --id=68a83742ae596e708fd0f72c")
+		fmt.Println("  ./cli --delete --id=68a83742ae596e708fd0f72c")
 		os.Exit(1)
 	}
 
@@ -75,6 +78,15 @@ func main() {
 			log.Fatal("Error: --file flag is required when using --update")
 		}
 		updateBin(*binID, *filename)
+		return
+	}
+
+	// Handle delete command
+	if *delete {
+		if *binID == "" {
+			log.Fatal("Error: --id flag is required when using --delete")
+		}
+		deleteBin(*binID)
 		return
 	}
 
@@ -178,6 +190,46 @@ func saveBinToList(id, name string) error {
 		Name: name,
 	}
 	binsList.Bins = append(binsList.Bins, newBin)
+
+	// Convert to JSON
+	data, err := json.MarshalIndent(binsList, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal bins list: %w", err)
+	}
+
+	// Save to file
+	if err := file.WriteFile(binsFileName, string(data)); err != nil {
+		return fmt.Errorf("failed to save bins file: %w", err)
+	}
+
+	return nil
+}
+
+// removeBinFromList removes a bin from the list and saves it to file
+func removeBinFromList(id string) error {
+	// Load existing list
+	binsList, err := loadBinsList()
+	if err != nil {
+		return fmt.Errorf("failed to load existing bins: %w", err)
+	}
+
+	// Find and remove the bin with matching ID
+	newBins := make([]BinRecord, 0, len(binsList.Bins))
+	found := false
+	for _, bin := range binsList.Bins {
+		if bin.ID != id {
+			newBins = append(newBins, bin)
+		} else {
+			found = true
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("bin with ID %s not found in local storage", id)
+	}
+
+	// Update the list
+	binsList.Bins = newBins
 
 	// Convert to JSON
 	data, err := json.MarshalIndent(binsList, "", "  ")
@@ -319,4 +371,43 @@ func updateBin(binID, filename string) {
 	fmt.Printf("Updated At: %s\n", response.Metadata.CreatedAt)
 	fmt.Printf("Private: %t\n", response.Metadata.Private)
 	fmt.Printf("Bin content has been updated with new data from %s\n", filename)
+}
+
+// deleteBin deletes an existing bin and removes it from local storage
+func deleteBin(binID string) {
+	// Load configuration
+	cfg := config.LoadFromEnvFile(".env")
+
+	// Check if API key is configured
+	apiKey := cfg.GetByKey("KEY")
+	if apiKey == "" {
+		log.Fatal("Error: API key not found. Please create .env file with KEY=<your_api_key>")
+	}
+
+	fmt.Printf("Deleting bin with ID: %s...\n", binID)
+
+	// Create API service
+	apiService := api.NewAPIService(cfg)
+
+	// Delete bin via JSONBin API
+	response, err := apiService.DeleteBin(binID)
+	if err != nil {
+		log.Fatalf("Error deleting bin: %v", err)
+	}
+
+	// Check if deletion was successful
+	if response.Message != "Bin deleted successfully" {
+		log.Fatalf("Unexpected response from server: %s", response.Message)
+	}
+
+	fmt.Printf("Bin deleted successfully from server!\n")
+	fmt.Printf("ID: %s\n", response.Metadata.ID)
+	fmt.Printf("Versions Deleted: %d\n", response.Metadata.VersionsDeleted)
+
+	// Remove from local storage
+	if err := removeBinFromList(binID); err != nil {
+		log.Fatalf("Error removing bin from local storage: %v", err)
+	}
+
+	fmt.Printf("Bin removed from local storage (bins.json)\n")
 }
