@@ -21,7 +21,7 @@ func main() {
 	product.NewProductHandler(router, product.ProductHandlerDeps{})
 
 	server := http.Server{
-		Addr:    ":8081",
+		Addr:    ":8087",
 		Handler: router,
 	}
 
