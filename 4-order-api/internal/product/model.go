@@ -12,7 +12,7 @@ type Product struct {
 	Images      pq.StringArray `json:"images" gorm:"type:text[]"`
 }
 
-func NewLink(name string, description string, images pq.StringArray) *Product {
+func NewProduct(name string, description string, images pq.StringArray) *Product {
 	return &Product{
 		Name:        name,
 		Description: description,
