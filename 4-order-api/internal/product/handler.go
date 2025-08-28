@@ -1,6 +1,7 @@
 package product
 
 import (
+	"api/orders/pkg/middleware"
 	"api/orders/pkg/req"
 	"api/orders/pkg/res"
 	"net/http"
@@ -19,11 +20,11 @@ func NewProductHandler(router *http.ServeMux, deps ProductHandlerDeps) {
 	handler := &ProductHandler{
 		ProductRepository: deps.ProductRepository,
 	}
-	router.HandleFunc("POST /product", handler.Create())
-	router.HandleFunc("PATCH /product/{id}", handler.Update())
-	router.HandleFunc("DELETE /product/{id}", handler.Delete())
-	router.HandleFunc("GET /product/{id}", handler.Read())
-	router.HandleFunc("GET /product", handler.List())
+	router.Handle("POST /product", middleware.IsAuthed(handler.Create()))
+	router.Handle("PATCH /product/{id}", middleware.IsAuthed(handler.Update()))
+	router.Handle("DELETE /product/{id}", middleware.IsAuthed(handler.Delete()))
+	router.Handle("GET /product/{id}", handler.Read())
+	router.Handle("GET /product", handler.List())
 }
 
 func (handler *ProductHandler) Create() http.HandlerFunc {

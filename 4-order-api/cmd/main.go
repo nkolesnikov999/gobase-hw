@@ -5,6 +5,7 @@ import (
 	"api/orders/internal/auth"
 	"api/orders/internal/product"
 	"api/orders/pkg/db"
+	"api/orders/pkg/middleware"
 	"fmt"
 	"net/http"
 )
@@ -25,9 +26,15 @@ func main() {
 		ProductRepository: productRepository,
 	})
 
+	// Middlewares
+	stack := middleware.Chain(
+		middleware.CORS,
+		middleware.Logging,
+	)
+
 	server := http.Server{
 		Addr:    ":8087",
-		Handler: router,
+		Handler: stack(router),
 	}
 
 	fmt.Println("Server is listening on port 8087")
