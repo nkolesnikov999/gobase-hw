@@ -1,4 +1,4 @@
 /.vscode
 .env
 /postgres-data
-/.gomodcache
+.gomodcache
