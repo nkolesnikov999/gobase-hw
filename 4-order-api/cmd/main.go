@@ -4,6 +4,7 @@ import (
 	"api/orders/configs"
 	"api/orders/internal/auth"
 	"api/orders/internal/product"
+	"api/orders/internal/user"
 	"api/orders/pkg/db"
 	"api/orders/pkg/middleware"
 	"fmt"
@@ -17,10 +18,15 @@ func main() {
 
 	// Repositories
 	productRepository := product.NewProductkRepository(db)
+	userRepository := user.NewUserRepository(db)
+
+	// Services
+	authService := auth.NewAuthService(userRepository, conf)
 
 	// Handler
 	auth.NewAuthHandler(router, auth.AuthHandlerDeps{
-		Config: conf,
+		Config:  conf,
+		Service: authService,
 	})
 	product.NewProductHandler(router, product.ProductHandlerDeps{
 		ProductRepository: productRepository,

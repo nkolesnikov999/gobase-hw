@@ -4,46 +4,57 @@ import (
 	"api/orders/configs"
 	"api/orders/pkg/req"
 	"api/orders/pkg/res"
-	"fmt"
 	"net/http"
 )
 
 type AuthHandlerDeps struct {
 	*configs.Config
+	Service *AuthService
 }
 
 type AuthHandler struct {
 	*configs.Config
+	AuthService *AuthService
 }
 
 func NewAuthHandler(router *http.ServeMux, deps AuthHandlerDeps) {
 	handler := &AuthHandler{
-		Config: deps.Config,
+		Config:      deps.Config,
+		AuthService: deps.Service,
 	}
-	router.HandleFunc("POST /auth/login", handler.Login())
-	router.HandleFunc("POST /auth/register", handler.Register())
+	router.HandleFunc("POST /auth", handler.Auth())
+	router.HandleFunc("POST /auth/verify", handler.Verify())
 }
 
-func (handler *AuthHandler) Login() http.HandlerFunc {
+func (handler *AuthHandler) Auth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := req.HandleBody[LoginRequest](&w, r)
+		body, err := req.HandleBody[AuthRequest](&w, r)
 		if err != nil {
 			return
 		}
-		fmt.Println(body)
-		data := LoginResponse{
-			Token: "123",
+		// Validation already performed in HandleBody via validate tag. Proceed.
+		sessionId, err := handler.AuthService.Auth(body.Phone)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		res.Json(w, data, 200)
+		data := AuthResponse{SessionId: sessionId}
+		res.Json(w, data, http.StatusOK)
 	}
 }
 
-func (handler *AuthHandler) Register() http.HandlerFunc {
+func (handler *AuthHandler) Verify() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := req.HandleBody[RegisterRequest](&w, r)
+		body, err := req.HandleBody[VerifyRequest](&w, r)
 		if err != nil {
 			return
 		}
-		fmt.Println(body)
+		token, err := handler.AuthService.Verify(body.SessionId, body.Code)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		data := VerifyResponse{Token: token}
+		res.Json(w, data, http.StatusOK)
 	}
 }
