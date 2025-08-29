@@ -30,6 +30,7 @@ func main() {
 	})
 	product.NewProductHandler(router, product.ProductHandlerDeps{
 		ProductRepository: productRepository,
+		Auth:              middleware.NewIsAuthed(conf),
 	})
 
 	// Middlewares
