@@ -150,12 +150,7 @@ func (handler *ProductHandler) List() http.HandlerFunc {
 			return
 		}
 
-		response := struct {
-			Items []Product `json:"items"`
-			Page  int       `json:"page"`
-			Limit int       `json:"limit"`
-			Total int64     `json:"total"`
-		}{
+		response := ProductListResponse{
 			Items: items,
 			Page:  page,
 			Limit: limit,
