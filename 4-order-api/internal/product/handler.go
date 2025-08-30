@@ -1,8 +1,10 @@
 package product
 
 import (
+	"api/orders/pkg/middleware"
 	"api/orders/pkg/req"
 	"api/orders/pkg/res"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -33,6 +35,10 @@ func NewProductHandler(router *http.ServeMux, deps ProductHandlerDeps) {
 
 func (handler *ProductHandler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		phone, ok := r.Context().Value(middleware.ContextPhoneKey).(string)
+		if ok {
+			fmt.Println(phone)
+		}
 		body, err := req.HandleBody[ProductCreateRequest](&w, r)
 		if err != nil {
 			return
@@ -52,6 +58,10 @@ func (handler *ProductHandler) Create() http.HandlerFunc {
 
 func (handler *ProductHandler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		phone, ok := r.Context().Value(middleware.ContextPhoneKey).(string)
+		if ok {
+			fmt.Println(phone)
+		}
 		idStr := r.PathValue("id")
 		idUint64, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
@@ -83,6 +93,10 @@ func (handler *ProductHandler) Update() http.HandlerFunc {
 
 func (handler *ProductHandler) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		phone, ok := r.Context().Value(middleware.ContextPhoneKey).(string)
+		if ok {
+			fmt.Println(phone)
+		}
 		idStr := r.PathValue("id")
 		idUint64, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
