@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func main() {
+func App() http.Handler {
 	conf := configs.LoadConfig()
 	db := db.NewDb(conf)
 	router := http.NewServeMux()
@@ -21,9 +21,6 @@ func main() {
 	productRepository := product.NewProductkRepository(db)
 	userRepository := user.NewUserRepository(db)
 	orderRepository := order.NewOrderRepository(db)
-
-	// Auto-migrate schema
-	_ = db.DB.AutoMigrate(&user.User{}, &product.Product{}, &order.Order{})
 
 	// Services
 	authService := auth.NewAuthService(userRepository, conf)
@@ -54,9 +51,14 @@ func main() {
 		middleware.Logging,
 	)
 
+	return stack(router)
+}
+
+func main() {
+	app := App()
 	server := http.Server{
 		Addr:    ":8087",
-		Handler: stack(router),
+		Handler: app,
 	}
 
 	fmt.Println("Server is listening on port 8087")
